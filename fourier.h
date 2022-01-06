@@ -27,8 +27,21 @@ std::vector<double> ift(const std::vector<std::complex<double>>& signal);
 double fft(const std::vector<std::complex<double>>& signal);
 
 #endif
-	
-	
+		
+///
+/// \param signal
+/// \param x
+/// \param y
+/// \return
+std::complex<double> dft2d(const std::vector<std::vector<double>> &signal,
+                           int x, int y);
+
+/// \note  not yet tested
+/// \param signal
+/// \return
+std::vector<std::vector<double>>
+dft2d(const std::vector<std::vector<double>> &signal);
+
 #ifdef FOURIER_IMPLEMENTATIONS
 
 static const double kPi = 3.1415;
@@ -162,6 +175,53 @@ std::vector<std::complex<double>> fft(const std::vector<double>& signal) {
   return result;
 }
 #endif// FOURIER_WITH_FFT
+	
+std::complex<double> dft2d(const std::vector<std::vector<double>> &signal,
+                           int x, int y) {
+
+  using namespace std::complex_literals;
+  int N = f.size();
+  int M = f.begin()->size();
+
+  std::complex<double> sum;
+  for (int k = 0; k < N; k++) {
+    for (int l = 0; l < M; l++) {
+      sum += f[k][l] * exp((-1i * 2.0 * PI) * (((double)k * (double)x) / N +
+                                               ((double)l * (double)y) / M));
+    }
+  }
+  return (1.0 / N * M) * sum;
+}
+
+std::vector<std::vector<double>>
+dft2d(const std::vector<std::vector<double>> &signal) {
+  using namespace std::complex_literals;
+  std::vector<std::vector<double>> solution;
+  for (int i = 0; i < f.size(); i++) {
+    solution.emplace_back();
+    for (int j = 0; j < f.begin()->size(); ++j)
+      solution.back().emplace_back(0.0, 0.0);
+  }
+
+  int N = f.size();
+  int M = f.begin()->size();
+
+  for (int n = 0; n < N; n++) {
+    for (int m = 0; m < M; m++) {
+      std::complex<double> sum(0, 0);
+      for (int k = 0; k < N; k++) {
+        for (int l = 0; l < M; l++) {
+          sum +=
+              f[k][l] * exp((-1i * 2.0 * PI) * (((double)k * (double)n) / N +
+                                                ((double)l * (double)m) / M));
+        }
+      }
+      solution[n][m] = (1.0 / N * M) * sum;
+    }
+  }
+
+  return solution;
+}
 
 }// namespace fourier
 #endif
