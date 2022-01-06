@@ -19,11 +19,16 @@ std::vector<std::complex<double>> dft(const std::vector<double>& signal);
 /// \return
 std::vector<double> ift(const std::vector<std::complex<double>>& signal);
 
+#if FOURIER_WITH_FFT
+
 ///
 /// \param signal
 /// \return
 double fft(const std::vector<std::complex<double>>& signal);
 
+#endif
+	
+	
 #ifdef FOURIER_IMPLEMENTATIONS
 
 static const double kPi = 3.1415;
@@ -72,28 +77,91 @@ std::vector<double> ift(const std::vector<std::complex<double>>& signal) {
   return reversed;
 }
 
-double fft(const std::vector<std::complex<double>>& signal) {
+#if FOURIER_WITH_FFT
 
-  assert(false && "Not implemented");
-#if 0
-   size_t N = signal.size();
-   size_t cutoff_size = 32;
+template<class T>
+std::vector<T> concat(const std::vector<std::vector<T>>& vecs) {
+  std::vector<T> result;
 
-   // TODO: That check is not complete
-   assert(N % 2 == 0 && "Size of signal must be the power of 2");
+  size_t result_sz = 0;
+  for (auto& v : vecs) { result_sz += v.size(); }
 
-   if (N < cutoff_size){
-	return dft(signal);
-   } else {
+  result.reserve(result_sz);
+  for (auto& v : vecs) {
+	for (auto& elem : v) { result.push_back(elem); }
+  }
 
-	auto signal_even = fft();
-	auto signal_odd = fft();
-	auto factor = nullptr;
-	return concat()
-   }
-#endif
-  return -1;
+  return result;
 }
+
+std::vector<std::complex<double>> mul(
+	const std::vector<std::complex<double>>& a,
+	const std::vector<std::complex<double>>& b) {
+
+  assert(a.size() == b.size());
+  std::vector<std::complex<double>> result(a.size());
+  for (size_t i = 0; i < a.size(); i++) { result[i] = a[i] * b[i]; }
+  return result;
+}
+
+std::vector<std::complex<double>> add(
+	const std::vector<std::complex<double>>& a,
+	const std::vector<std::complex<double>>& b) {
+
+  assert(a.size() == b.size());
+  std::vector<std::complex<double>> result(a.size());
+  for (size_t i = 0; i < a.size(); i++) { result[i] = a[i] + b[i]; }
+  return result;
+}
+
+std::vector<std::complex<double>> fft(const std::vector<double>& signal) {
+  using namespace std::complex_literals;
+
+  size_t N = signal.size();
+  size_t cutoff_size = 16;
+
+  assert(N % 2 == 0 && "Size of signal must be the multiple of 2");
+
+  if (N <= cutoff_size) {
+	return dft(signal);
+  }
+
+  std::vector<double> even_signal;
+  std::vector<double> odd_signal;
+
+  even_signal.reserve(N / 2);
+  odd_signal.reserve(N / 2);
+
+  for (size_t i = 0; i < N; i++) {
+	if (i % 2 == 0) {
+	  even_signal.push_back(signal[i]);
+	} else {
+	  odd_signal.push_back(signal[i]);
+	}
+  }
+
+  auto even = fft(even_signal);
+  auto odd = fft(odd_signal);
+
+  std::vector<std::complex<double>> factor_beg, factor_end;
+  factor_beg.reserve(N / 2);
+  factor_end.reserve(N / 2);
+
+  for (size_t i = 0; i < N; i++) {
+	auto val = (-2.0i * kPi * (double)i) / (double)N;
+	if (i < N / 2) {
+	  factor_beg.emplace_back(val);
+	} else {
+	  factor_end.emplace_back(val);
+	}
+  }
+
+  auto result = concat<std::complex<double>>(
+	  {add(even, mul(factor_beg, odd)), add(even, mul(factor_end, odd))});
+  //  for (auto& x : result) { x = x * 1.0 / (double)N; }
+  return result;
+}
+#endif// FOURIER_WITH_FFT
 
 }// namespace fourier
 #endif
