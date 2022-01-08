@@ -1,6 +1,3 @@
-//
-// Created by M.Kojro on 1/6/2022.
-//
 
 #ifndef FOURIER_TRANSFORM_SRC_FOURIER_H_
 #define FOURIER_TRANSFORM_SRC_FOURIER_H_
